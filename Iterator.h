@@ -26,8 +26,15 @@ public:
             ready_time.push_back(0);
             queue_range.push_back(0);
         }
+        future_queue.push(0);
         processing_time = time;
-        cout << "Worker Constructor " << ready_time.capacity() << endl;
+        // cout << "Worker Constructor " << ready_time.capacity() << endl;
+    };
+
+    bool check_RT () {
+        if (*(min_element(ready_time.cbegin(), ready_time.cend())) == 0) 
+            return true;
+        return false;
     };
 
     // ~Worker() { 

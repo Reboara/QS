@@ -45,43 +45,52 @@ protected:
     Worker W1;
     Worker W2;
 public:
-    QS(Worker* w1, Worker* w2): W1(*w1), W2(*w2) {
-        double x1 = 0, x2 = 0;
+    QS(Worker& w1, Worker& w2): W1(w1), W2(w2) {
         // cout << "\tCyle Start\n";
-        for (int i = 0; i <= duration; i++) {
-            
-            double x = (double)(std::rand()%100 + 1)/ 100.0;
-            x1 += pow(  (-2)*sigma*sigma*log(x*sigma*pow( 2*pi , 0.5)) + R1*R1  , 0.5);
-            (*w1).future_queue.push(x1);
-            cout<<(*w1).future_queue.back()<<" x1 = "<<x1<<endl;
-
-            x = (double)(std::rand()%100 + 1)/ 100.0;
-            x2 += pow(  (-2)*sigma*sigma*log(x*sigma*pow( 2*pi , 0.5)) + R1*R1  , 0.5);
-            (*w2).future_queue.push(x2);
-        }
-        cout << "\tCyle End cap = "<<(*w2).ready_time.capacity()<<" size = "
-        <<(*w2).ready_time.size()<<" Future back = "<<(*w1).future_queue.back()<<"\n";
+        // cout << "\tCyle End cap = "<<(*w2).ready_time.capacity()<<" size = "
+        // <<(*w2).ready_time.size()<<" Future back = "<<(*w1).future_queue.back()<<"\n";
     };
 
     ~QS() { cout << "QS Distructor.\n"; }
 
+    void Work_with_FQ () { // имитация времени, когда приходит заявка
+        double x1 = W1.future_queue.front(), x2 = W1.future_queue.front();
+        double x = (double)(std::rand()%100 + 1)/ 100.0;
+        W1.future_queue.pop(), W2.future_queue.pop();
+
+        x1 += pow(  (-2)*sigma*sigma*log(x*sigma*pow( 2*pi , 0.5)) + R1*R1  , 0.5);
+        W1.future_queue.push(x1);
+        // cout<<W1.future_queue.back()<<" x1 = "<<x1<<endl;
+
+        x = (double)(std::rand()%100 + 1)/ 100.0;
+        x2 += pow(  (-2)*sigma*sigma*log(x*sigma*pow( 2*pi , 0.5)) + R1*R1  , 0.5);
+        W2.future_queue.push((int)x2);
+    };
+
     void modeling (int N) {
+        cout << "Start modeling.\n";
+        Work_with_FQ();
         for (int i = 0; i <= N; i++) {
-            cout<<"Future time of entry "<<W1.future_queue.front()<<endl;
+            // cout<<"Future time of entry "<<W1.future_queue.front()<<endl;
             if (W1.future_queue.front() == i) {
-                cout<<"Поступила заявка в момент "<< W1.future_queue.front() <<" ";
-                W1.future_queue.pop();
-                cout<<"New time "<<W1.future_queue.front()<<endl;
+                // cout<<"Поступила заявка в момент "<< W1.future_queue.front() <<" ";
+                // cout<<"New time "<<W1.future_queue.front()<<endl;
 
                 auto R = min_element(W1.queue_range.cbegin(), W1.queue_range.cend());
                 int i = distance(W1.queue_range.cbegin(), R);
 
-                cout << "index " << i  <<" element "<< W1.queue_range.size() << endl;
-                cout <<" Modeling "<< W1 << "\t->";
-                W1.queue_range[i] = W1.queue_range[i] + 1;
-                cout << W1;
+                // cout << "index " << i  <<" element "<< W1.queue_range.size() << endl;
+                // cout <<" Modeling "<< W1 << "\t->";
+                W1.queue_range[i] += 1;
+                // W1.ready_time[i] += W1.processing_time;
+                Work_with_FQ();
             }
+            
+            // while () {
+
+            // } 
         }
+        cout << "End modeling.\n";
     }
 };
 

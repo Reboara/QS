@@ -39,11 +39,9 @@ int T1 = 10+11+7, T2 = 8+9+8, T3 = 5+11+9+11, T4 = 5+11+9+7;
 int main (int argc, char* argv[]) {
     std::srand(std::time(nullptr));
     Worker W1(n, T1), W2(m, T2);
-    QS SMO(&W1, &W2);
-    
-    cout << "Start modeling.\n";
-    SMO.modeling(15);
-    cout << "End modeling.\n";
+    QS SMO(W1, W2);
+
+    SMO.modeling(100);
     
     return 0;
 }
