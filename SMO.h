@@ -31,9 +31,9 @@
 #include <cmath>
 #include <queue>
 #include <iostream>
-#include "Iterator.h"
+#include "Worker.h"
 using namespace std;
-double e = 2.71828182845904, sigma = 4, pi = 3.1415926535;
+double e = 2.71828182845904, sigma = 3, pi = 3.1415926535;
 int duration = 10, R1 = 10;
 
 class Worker;
@@ -42,55 +42,94 @@ class Iterator;
 
 class QS{
 protected:
-    Worker W1;
-    Worker W2;
+    Typical_Worker W1;
+    Typical_Worker W2;
+    Advanced_Worker W3;
 public:
-    QS(Worker& w1, Worker& w2): W1(w1), W2(w2) {
-        // cout << "\tCyle Start\n";
-        // cout << "\tCyle End cap = "<<(*w2).ready_time.capacity()<<" size = "
-        // <<(*w2).ready_time.size()<<" Future back = "<<(*w1).future_queue.back()<<"\n";
+    //std::move rvalue lvalue
+    QS(int n, int m, int k): 
+        W1(n, T1), W2(m, T2), W3(k) {
     };
 
-    ~QS() { cout << "QS Distructor.\n"; }
+    ~QS() { cout << "Distructor QS.\n"; }
 
-    void Work_with_FQ () { // имитация времени, когда приходит заявка
-        double x1 = W1.future_queue.front(), x2 = W1.future_queue.front();
-        double x = (double)(std::rand()%100 + 1)/ 100.0;
-        W1.future_queue.pop(), W2.future_queue.pop();
+    void Work_with_FQ (int time) { 
+        cout <<"\tСейчас " << time << endl;
+        // cout << W1.fmine_qr() << endl;
 
-        x1 += pow(  (-2)*sigma*sigma*log(x*sigma*pow( 2*pi , 0.5)) + R1*R1  , 0.5);
-        W1.future_queue.push(x1);
-        // cout<<W1.future_queue.back()<<" x1 = "<<x1<<endl;
+        // уменьшаем вребя обработки W1
+        for (int i = 0; i < W1.size; i ++) {
+            if (W1.ready_time[i] > 0) W1.ready_time[i] -= 1;
+            if (((W1.ready_time[i] % W1.processing_time) == 0)&&(W1.queue_range[i] > 0)) {
+                W1.queue_range[i] -= 1;
+                // Если 1 отработал, ready_time == time то надо отправить заявку на второго работника
+                int index2 = W2.fmine_qr();
+                W2.queue_range[index2] += 1; // прибавляем заявку ко второму работнику, у которого минимальная очередь
+                W2.ready_time[index2] += W2.processing_time; // устанвливаем время обработки, это время будет падать до 0
+                // а не увеличиваться, тк на увеличение сложно составить формулу, тк есть глобальное время
+                index2 = W2.fmine_qr();
+                cout << W1 << W2; 
+            }
 
-        x = (double)(std::rand()%100 + 1)/ 100.0;
-        x2 += pow(  (-2)*sigma*sigma*log(x*sigma*pow( 2*pi , 0.5)) + R1*R1  , 0.5);
-        W2.future_queue.push((int)x2);
+        }
+        // уменьшаем вребя обработки W2
+        for (int i = 0; i < W2.size; i ++) {
+            if (W2.ready_time[i] > 0) W2.ready_time[i] -= 1;
+            if (((W2.ready_time[i] % W2.processing_time) == 0)&&(W2.queue_range[i] > 0)) W2.queue_range[i] -= 1;
+        }
+
+        // уменьшаем вребя обработки W3
+        for (int i = 0; i < W3.size; i ++) {
+            if (W3.ready_time[i] > 0) W3.ready_time[i] -= 1;
+        }
+
+        // отправляем заявку в реальную очередь W1
+        // если из future пришла заявка, отправляем ее на W1
+        // первая заявка приходит в момент времени 0
+        if (W1.future_queue.front() == time) {
+            int index1 = W1.fmine_qr();
+            W1.queue_range[index1] += 1;
+            W1.ready_time[index1] += W1.processing_time;
+
+            // имитация времени, когда придет новая заявка
+            double x1 = W1.future_queue.front();
+            double x = (double)(std::rand()%100 + 1)/ 100.0;
+            W1.future_queue.pop();
+
+            x1 += pow(  (-2)*sigma*sigma*log(x*sigma*pow( 2*pi , 0.5)) + R1*R1  , 0.5);
+            W1.future_queue.push(x1);
+            cout << "Пришла заявка в t = "<<x1<<endl;
+            cout << W1 << W2 << W3;
+        }
+
+        int index1 = W1.fmaxe_qr();
+        int index2 = W2.fmaxe_qr();
+        int index3 = W3.fmine_rt();
+        // Имитация работы третьего работника
+        // смотрим, есть ли свободный работник и образовались ли очереди у W1 и W2
+        while (W3.check_RT() && ((W1.queue_range[index1] > 1) || (W2.queue_range[index2] > 1))) {
+            if (W1.queue_range[index1] > W2.queue_range[index2]) {
+                W3.ready_time[index3] += W3.first_processing_time;
+                W1.queue_range[index1] -= 1;
+                W1.ready_time[index1] -= W1.processing_time;
+            }
+            else {
+                W3.ready_time[index3] += W3.first_processing_time;
+                W2.queue_range[index1] -= 1;
+                W2.ready_time[index1] -= W2.processing_time;
+            }
+            cout<<"   " << W1<<"   " << W2<<"   " << W3;
+        }
+
     };
 
     void modeling (int N) {
         cout << "Start modeling.\n";
-        Work_with_FQ();
-        for (int i = 0; i <= N; i++) {
-            // cout<<"Future time of entry "<<W1.future_queue.front()<<endl;
-            if (W1.future_queue.front() == i) {
-                // cout<<"Поступила заявка в момент "<< W1.future_queue.front() <<" ";
-                // cout<<"New time "<<W1.future_queue.front()<<endl;
-
-                auto R = min_element(W1.queue_range.cbegin(), W1.queue_range.cend());
-                int i = distance(W1.queue_range.cbegin(), R);
-
-                // cout << "index " << i  <<" element "<< W1.queue_range.size() << endl;
-                // cout <<" Modeling "<< W1 << "\t->";
-                W1.queue_range[i] += 1;
-                // W1.ready_time[i] += W1.processing_time;
-                Work_with_FQ();
-            }
-            
-            // while () {
-
-            // } 
+        Work_with_FQ(0);
+        
+        for (int i = 1; i <= N; i++) {
+            Work_with_FQ(i);
         }
-        cout << "End modeling.\n";
     }
 };
 
