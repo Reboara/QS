@@ -31,13 +31,12 @@
 #include <cmath>
 #include <queue>
 #include <iostream>
+#include <random>
 #include "Worker.h"
 using namespace std;
-double e = 2.71828182845904, sigma = 3, pi = 3.1415926535;
-int duration = 10, R1 = 10;
+int R1 = 10;
 
 class Worker;
-class Iterator;
 
 
 class QS{
@@ -55,7 +54,6 @@ public:
 
     void Work_with_FQ (int time) { 
         cout <<"\tСейчас " << time << endl;
-        // cout << W1.fmine_qr() << endl;
 
         // уменьшаем вребя обработки W1
         for (int i = 0; i < W1.size; i ++) {
@@ -87,18 +85,21 @@ public:
         // если из future пришла заявка, отправляем ее на W1
         // первая заявка приходит в момент времени 0
         if (W1.future_queue.front() == time) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::exponential_distribution<> d(1);
+    
             int index1 = W1.fmine_qr();
             W1.queue_range[index1] += 1;
             W1.ready_time[index1] += W1.processing_time;
 
             // имитация времени, когда придет новая заявка
             double x1 = W1.future_queue.front();
-            double x = (double)(std::rand()%100 + 1)/ 100.0;
             W1.future_queue.pop();
+            cout << "Пришла заявка через = "<<x1<<endl;
 
-            x1 += pow(  (-2)*sigma*sigma*log(x*sigma*pow( 2*pi , 0.5)) + R1*R1  , 0.5);
+            x1 += R1*d(gen);
             W1.future_queue.push(x1);
-            cout << "Пришла заявка в t = "<<x1<<endl;
             cout << W1 << W2 << W3;
         }
 

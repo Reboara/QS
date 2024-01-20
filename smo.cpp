@@ -26,10 +26,7 @@
 Queueing System = СМО
 */
 
-#include <algorithm>
 #include <ctime>
-#include <cmath>
-#include <queue>
 #include <iostream>
 #include "SMO.h"
 
