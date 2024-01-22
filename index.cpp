@@ -2,9 +2,7 @@ using namespace std;
 
 #include "engine.cpp"
 
-int main()
-{
-
+int main() {
     const int R1 = 8, G1 = 9, B1 = 10,
               R2 = 11, G2 = 5, B2 = 11,
               R3 = 10, G3 = 5, B3 = 7;

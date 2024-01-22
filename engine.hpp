@@ -10,65 +10,59 @@ using namespace std;
 
 class System;
 
-void error(const char *alekseev)
-{
-    printf("\n\033[0;31mError: %s\n", alekseev);
-    exit(228);
+void error(const char *str ) {
+    printf("\n\033[0;31mError: %s.\n", str);
+    exit(1);
 }
 
-struct Parameters
-{
+struct Parameters {
     int Workers[3];
 };
 
-class Statistics
-{
+class Statistics {
 public:
     Statistics(System *_sys) : sys(_sys) {}
-    int QMAX[2],
-        QCONT[2],
+    int QMAX[2], // максимальная длинна очереди
+        QCONT[2], 
         QENTRY[2],
         QENTRY0[2];
-    double QAVECONT[2],
-        QAVETIME[2],
-        QAVETIME0[2];
-    int WENTRY[3];
-    double WLOAD[3],
-        WAVETIME[3];
+    double TAVECONT[2], // Сколько в среднем находится транзактов в системе на каждом этапе обработки
+        QAVETIME[2], //Среднее время нахождения в системе
+        QAVETIME_PROC[2]; //Среднее время обработки заявки
+    int WENTRY[3]; // сколько заявок прошло через рабочих
+    double K_WORKERS[3], // процент загрузи рабочих (коэф загрузки операторов)
+        AST[3]; // average service time среднее время обслуживания
     friend ostream &operator<<(ostream &os, const Statistics &stats);
 
 private:
     System *sys;
 };
 
-class Transact
-{
+class Transact {
 public:
     int id;
-    int wtype[2]; // РўРёРїС‹ СЂР°Р±РѕС‡РёС… РЅР° СЂР°Р·РЅС‹С… СЌС‚Р°РїР°С…
+    int wtype[2]; // Какой тип рабочих обслужил заявку на каждом этапе
     bool locked;
     System *sys;
-    int stage; // 0 - BIRTH, 1,2 - РїРѕРґР»РµР¶Р°С‚ РѕР±СЂР°Р±РѕС‚РєРµ, 3 - С‚РµСЂРјРёРЅР°Р»СЊРЅРѕРµ
+    int stage; // Сталдия обработки, 0 - заявыка пришла с систему, 1,2 - подлежат обработке, 3 - терминальное
 
-    double leaveTime; // РњРѕРґРµР»СЊРЅРѕРµ РІСЂРµРјСЏ РІС‹С…РѕРґР° РёР· FEC
+    double leaveTime; // Время выхода из FEC
 
     double birthTime;
-    double startTime[2], finishTime[2]; // Р”Р»СЏ СЃС‚Р°С‚РёСЃС‚РёРє
-
+    double startTime[2], finishTime[2]; // Для статистики
     Transact(System *_sys, double _birthTime);
     void eventCallback();
 };
 
-class System
-{
+class System {
 public:
-    double currentTime; // РњРѕРґРµР»СЊРЅРѕРµ РІСЂРµРјСЏ С‚РµРєСѓС‰РµРіРѕ СЃРѕР±С‹С‚РёСЏ
+    double currentTime; // Время моделирования
     int uniqueX;
 
-    int R1, G1, B1, R2, G2, B2, R3, G3, B3; // РџР°СЂР°РјРµС‚СЂС‹ СЃРёРјСѓР»СЏС†РёРё
+    int R1, G1, B1, R2, G2, B2, R3, G3, B3; // Дано
 
-    queue<Transact *> Q1, Q2;
-    int freeWorkers[3]; // РљРѕР»РёС‡РµСЃС‚РІРѕ СЃРІРѕР±РѕРґРЅС‹С… РєР°РЅР°Р»РѕРІ РґР»СЏ РєР°Р¶РґРѕРіРѕ РёР· С‚СЂС‘С… С‚РёРїРѕРІ СЂР°Р±РѕС‡РёС…
+    queue<Transact *> Q1, Q2; // Очереди заявок, находящихся в 
+    int freeWorkers[3]; // количество свободных работников каждого типа
 
     mt19937 rng;
 
@@ -77,33 +71,35 @@ public:
     void insertToFEC(Transact *);
     void removeFromCEC(Transact *);
     void simulate(double, struct Parameters);
-    void setRandomSeed(int seed)
-    {
-        rng = mt19937(seed);
-    }
+    void setRandomSeed(int seed) {
+        rng = mt19937(seed); // генерируем ключ генерации
+    };
+
     System(int _R1, int _G1, int _B1, int _R2, int _G2, int _B2, int _R3, int _G3, int _B3);
 
-    ~System()
-    {
+    ~System() {
         reset();
         delete stats;
-    }
+    };
 
-    void writeLogsTo(ostream &s) { logs = &s; }
-    void freeTransact(Transact *d) { toFree.push(d); }
+    void writeLogsTo(ostream &s) { print_statistics = &s; };
+    void freeTransact(Transact *d) { toFree.push(d); };
     bool logChains, logStats;
 
-    ostream *logs;
+    ostream *print_statistics;
 
 private:
-    queue<Transact *> toFree; // РўСЂР°РЅР·Р°РєС‚С‹ Рє СѓРґР°Р»РµРЅРёСЋ
+    queue<Transact *> toFree; // Заявки, которые надо удалить
     list<Transact *> FEC, CEC;
     list<Transact *>::iterator CEC_active_ptr;
-    void assignTransact2Worker(int type, Transact *tr, double time); // РќР°Р·РЅР°С‡РёС‚СЊ РѕР±СЂР°Р±РѕС‚РєСѓ С‚СЂР°РЅР·Р°РєС‚Р° СЂР°Р±РѕС‡РµРјСѓ РѕРїСЂРµРґРµР»С‘РЅРЅРѕРіРѕ С‚РёРїР°
-    // Рё РїРµСЂРµРјРµСЃС‚РёС‚СЊ С‚СЂР°РЅР·Р°РєС‚ РІ FEC
+    // Назначить обработку транзакта рабочему определённого типа
+    // и переместить транзакт в FEC
+    void assign_Transact_to_Worker(int type, Transact *tr, double time); 
 
-    void reset();        // РћС‡РёСЃС‚РёС‚СЊ РІСЃРµ РґР°РЅРЅС‹Рµ, СЃРѕР·РґР°РЅРЅС‹Рµ РІ РїСЂРѕС†РµСЃСЃРµ СЃРёРјСѓР»СЏС†РёРё
-    void assignJobs();   // РќР°Р·РЅР°С‡РёС‚СЊ СЂР°Р±РѕС‡РёРј С‚СЂР°РЅР·Р°РєС‚С‹ РґР»СЏ РѕР±СЂР°Р±РѕС‚РєРё
-    void processCEC();   // Р Р°СЃРїСЂРµРґРµР»РёС‚СЊ С‚СЂР°РЅР·Р°РєС‚С‹ РёР· CEC РїРѕ РѕС‡РµСЂРµРґСЏРј
-    void collectStats(); // РџРѕРґРІРµСЃС‚Рё РёС‚РѕРіРё СЃРёРјСѓР»СЏС†РёРё
+
+
+    void reset();        // отчистка памяти
+    void assignJobs();   // распределение заявок по рабочим/очередям
+    void processCEC();   // Распределить транзакты из CEC по очередям
+    void collectStats(); // Статистика и выводы
 };

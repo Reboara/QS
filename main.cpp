@@ -2,12 +2,11 @@
 
 using namespace std;
 
-int main()
-{
+int main() {
 
-    const int R1 = 8, G1 = 9, B1 = 10,
-              R2 = 11, G2 = 5, B2 = 11,
-              R3 = 10, G3 = 5, B3 = 7;
+    const int R1 = 10, G1 = 11, B1 = 7,
+              R2 = 8, G2 = 9, B2 = 8,
+              R3 = 5, G3 = 11, B3 = 9;
     System system(R1, G1, B1, R2, G2, B2, R3, G3, B3);
     struct Parameters params;
 
@@ -17,30 +16,25 @@ int main()
     const int WORKER_COUNT = 9, TIME = 10000;
     int t1best, t2best, t3best;
     double AVECONT_BEST = 9999;
-    for (int i = 0; i <= WORKER_COUNT; i++)
-    {
-        for (int j = 0; i + j <= WORKER_COUNT; j++)
-        {
+    for (int i = 0; i <= WORKER_COUNT; i++) {
+        for (int j = 0; i + j <= WORKER_COUNT; j++) {
             int k = WORKER_COUNT - i - j;
             params.Workers[0] = i;
             params.Workers[1] = j;
             params.Workers[2] = k;
 
             system.simulate(TIME, params);
-            if (max(system.stats->QAVECONT[0], system.stats->QAVECONT[1]) <= 2)
-            {
-                if (max(system.stats->QAVECONT[0], system.stats->QAVECONT[1]) < AVECONT_BEST)
-                {
+            if (max(system.stats->TAVECONT[0], system.stats->TAVECONT[1]) <= 2) {
+                if (max(system.stats->TAVECONT[0], system.stats->TAVECONT[1]) < AVECONT_BEST) {
                     t1best = i;
                     t2best = j;
                     t3best = k;
-                    AVECONT_BEST = max(system.stats->QAVECONT[0], system.stats->QAVECONT[1]);
+                    AVECONT_BEST = max(system.stats->TAVECONT[0], system.stats->TAVECONT[1]);
                 }
             }
         }
     }
-    if (AVECONT_BEST <= 2)
-    {
+    if (AVECONT_BEST <= 2) {
         cout << "We can keep average continuous queue size not more than " << AVECONT_BEST << " transacts with workers distribution (" << t1best << ", " << t2best << ", " << t3best << ")\n";
         cout << "Calculating stats for this distribution:\n";
         params.Workers[0] = t1best;
@@ -50,8 +44,7 @@ int main()
         system.simulate(TIME, params);
         cout << *(system.stats) << endl;
     }
-    else
-    {
+    else {
         cout << WORKER_COUNT << " workers is not enough to keep average continuous queue size not more than 2\n";
     }
 }
