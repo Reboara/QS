@@ -30,14 +30,14 @@ Queueing System = СМО
 #include <iostream>
 #include "SMO.h"
 
-int n = 2, m = 2, k = 3;
+int n = 2, m = 2, k = 2;
 int T1 = 10+11+7, T2 = 8+9+8, T3 = 5+11+9+11, T4 = 5+11+9+7;
 
 int main (int argc, char* argv[]) {
     std::srand(std::time(nullptr));
     QS SMO(n, m, k);
 
-    SMO.modeling(100);
+    SMO.modeling(200);
     
     return 0;
 }
